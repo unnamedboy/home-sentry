@@ -1,0 +1,30 @@
+- alias: "Grafana Alert - Window State"
+  id: "grafana_ios_push_window_state"
+  triggers:
+    - trigger: webhook
+      webhook_id: "grafana-vHuNhmA9EfyGO2oFYLCsWpGP"
+      allowed_methods:
+        - POST
+      local_only: true
+  actions:
+    - action: notify.notify
+      data:
+        title: "📊 Grafana 监控"
+        message: |
+          更新时间: {{ now().strftime('%H:%M:%S') }}
+          {% if trigger.json.alerts is defined %}
+          {% for alert in trigger.json.alerts %}
+          🪟 {{ alert.labels.friendly_name | default('未知设备') }}: {{ '🔴未关' if alert.status == 'firing' else '🟢已关' }}
+          {% endfor %}
+          {% else %}
+          ⚠️ 收到测试信号 (无设备数据)
+          {% endif %}
+        data:
+          tag: "grafana_alert"
+          push:
+            interruption-level: active
+          presentation_options:
+            - alert
+            - badge
+            - sound
+  mode: single

@@ -1,0 +1,11 @@
+*
+!*/
+
+
+!*.yaml
+!*.yml
+!*.conf
+!mqtt_pipe.py
+!Dockerfile
+
+!.gitignore

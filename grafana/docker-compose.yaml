@@ -1,0 +1,17 @@
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "9280:3000"
+    volumes:
+      - ./volumes:/var/lib/grafana
+    networks:
+      - home-sentry  # 新增：连接监视网络
+
+networks:  # 顶层定义
+  home-sentry:
+    name: home-sentry
+    external: true
+
