@@ -1,0 +1,19 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+        - /mnt/rpi-share/mqtt-logs:/mosquitto/log
+        - /mnt/rpi-share/mqtt-data:/mosquitto/data
+        - ./config:/mosquitto/config:ro
+    networks:
+      - home-sentry
+
+networks:
+  home-sentry:
+    name: home-sentry
+    external: true
+

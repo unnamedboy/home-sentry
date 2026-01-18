@@ -1,0 +1,18 @@
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - /mnt/rpi-share/loki:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - home-sentry
+
+networks:
+  home-sentry:
+    name: home-sentry
+    external: true
+

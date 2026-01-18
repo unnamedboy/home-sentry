@@ -1,0 +1,14 @@
+# mqtt.yaml
+base_topic: homeassistant
+publish_attributes: true
+include:
+  domains:
+    - light
+    - switch
+    - sensor         # energy, temperature, humidity, etc.
+    - binary_sensor  # windows, door, motions
+    - media_player   # Sonos / TV
+    - climate
+    - fan
+    - cover
+

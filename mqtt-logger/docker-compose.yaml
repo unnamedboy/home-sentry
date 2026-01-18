@@ -1,0 +1,16 @@
+# mqtt-to-loki/docker-compose.yml
+services:
+  mqtt-to-loki:
+    build: .
+    container_name: mqtt-to-loki
+    restart: unless-stopped
+    networks:
+      - home-sentry
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=homeassistant/#
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+networks:
+  home-sentry:
+    external: true
