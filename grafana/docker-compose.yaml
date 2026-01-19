@@ -8,9 +8,9 @@ services:
     volumes:
       - ./volumes:/var/lib/grafana
     networks:
-      - home-sentry  # 新增：连接监视网络
-
-networks:  # 顶层定义
+      - home-sentry
+    user: "1000:1000" # use current user, since we map settings to NAS
+networks:
   home-sentry:
     name: home-sentry
     external: true
