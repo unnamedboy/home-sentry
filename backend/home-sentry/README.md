@@ -1,102 +1,194 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Home Sentry - Smart Home Monitoring Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A modern, production-ready NestJS backend for smart home device management and monitoring.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Overview
 
-## Description
+Home Sentry is a comprehensive backend solution for managing smart homes. It provides REST APIs for managing homes, rooms, devices, and tracks all changes through an audit logging system.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Project setup
+- **Home Management** - Create and manage multiple homes with timezone support
+- **Room Organization** - Organize devices into rooms within homes
+- **Device Control** - Manage smart devices with customizable source references
+- **Audit Logging** - Complete audit trail of all create, update, and delete operations
+- **JWT Authentication** - Secure API endpoints with JWT-based authentication
+- **Health Monitoring** - Built-in health check endpoints
+- **Type-Safe** - Full TypeScript support with strict type checking
+
+## Tech Stack
+
+- **Framework**: [NestJS](https://nestjs.com) - Progressive Node.js framework
+- **Database**: SQLite (prototype phase) with TypeORM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Testing**: Jest with comprehensive unit and e2e tests
+- **Language**: TypeScript
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+## Development
+
+### Running the Application
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
+# Development mode with auto-reload
 $ npm run start:dev
 
-# production mode
+# Watch mode
+$ npm run start:dev
+
+# Debug mode
+$ npm run start:debug
+
+# Production build
+$ npm run build
 $ npm run start:prod
 ```
 
-## Run tests
+The API will be available at `http://localhost:3000`
+
+## Testing
 
 ```bash
-# unit tests
+# Run all unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
+# Run tests in watch mode
+$ npm run test:watch
 
-# test coverage
+# Run tests with coverage report
 $ npm run test:cov
+
+# Run e2e tests
+$ npm run test:e2e
 ```
 
-## Deployment
+## Project Structure
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+```
+src/
+├── authentication/      # JWT authentication & authorization
+├── health/             # Health check endpoints
+├── home/               # Home, Room, and Device management
+│   ├── entities/       # TypeORM entity definitions
+│   └── *.service.ts    # Business logic with audit logging
+└── utils/              # Utility functions
+test/                   # End-to-end tests
+```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## API Endpoints
+
+### Authentication
+- `POST /auth/login` - User login with credentials
+
+### Health
+- `GET /health` - Health check endpoint
+
+### Homes
+- `GET /homes` - List all homes
+- `POST /homes` - Create a new home
+- `GET /homes/:id` - Get home details
+- `PATCH /homes/:id` - Update home
+- `DELETE /homes/:id` - Delete home
+
+### Rooms
+- `GET /homes/:homeId/rooms` - List rooms in a home
+- `POST /homes/:homeId/rooms` - Create a room
+- `GET /rooms/:id` - Get room details
+- `PATCH /rooms/:id` - Update room
+- `DELETE /rooms/:id` - Delete room
+
+### Devices
+- `GET /rooms/:roomId/devices` - List devices in a room
+- `POST /devices` - Create a device
+- `GET /devices/:id` - Get device details
+- `PATCH /devices/:id` - Update device
+- `DELETE /devices/:id` - Delete device
+
+## Database Schema
+
+The application uses TypeORM with SQLite for the prototype phase:
+
+- **homes** - Smart home instances with timezone support
+- **rooms** - Rooms within homes
+- **devices** - Smart devices (lights, sensors, etc.)
+- **signals** - Device state signals
+- **audit_logs** - Complete audit trail of all changes
+
+## Audit Logging
+
+All create, update, and delete operations are automatically logged:
+
+```json
+{
+  "tableName": "devices",
+  "action": "UPDATE",
+  "recordId": 1,
+  "oldValue": { "name": "Light", "kind": "light" },
+  "newValue": { "name": "Living Room Light", "kind": "light" },
+  "timestamp": "2026-01-26T10:30:00Z"
+}
+```
+
+## Configuration
+
+Set the following environment variables in `.env`:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=password123
+JWT_SECRET=your-secret-key
+JWT_EXPIRATION=3600
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Code Quality
 
-## Resources
+```bash
+# Format code with Prettier
+$ npm run format
 
-Check out a few resources that may come in handy when working with NestJS:
+# Lint and fix code
+$ npm run lint
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Testing Coverage
 
-## Support
+The project maintains comprehensive test coverage including:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- ✅ 98+ unit tests
+- ✅ Controller tests with mocked services
+- ✅ Service tests with repository mocking
+- ✅ Audit logging verification
+- ✅ Error handling and edge cases
 
-## Stay in touch
+## Contributing
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Contributions are welcome! Please ensure:
+
+1. All tests pass (`npm run test`)
+2. Code is formatted (`npm run format`)
+3. No linting errors (`npm run lint`)
+4. New features include tests with ≥80% coverage
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED - This is a private project.
 
-# Prettier configuration
+## Support
 
-# This file is used to configure Prettier settings for the project.
+For issues and feature requests, please contact the development team.
+
+---
+
+**Version**: 0.0.1 (Prototype Phase)
