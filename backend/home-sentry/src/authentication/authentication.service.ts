@@ -17,7 +17,7 @@ export class AuthenticationService {
 
     
   async loginAsync (username: string, password: string): Promise<IAccessToken | null> {
-    if (username !== this.adminUsername && password !== this.adminPassword) {
+    if (username !== this.adminUsername || password !== this.adminPassword) {
       throw new UnauthorizedException('Invalid credentials');
     }
     // TODO: update subject in the future, when we have db connected

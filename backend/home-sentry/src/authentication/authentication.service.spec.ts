@@ -9,20 +9,20 @@ describe('AuthenticationService', () => {
   let configService: ConfigService;
   let jwtService: JwtService;
 
-  const mockConfigService = {
-    get: jest.fn((key: string) => {
-      if (key === 'ADMIN_USERNAME') return 'admin';
-      if (key === 'ADMIN_PASSWORD') return 'password123';
-      return null;
-    }),
-  };
-
   const mockJwtService = {
     sign: jest.fn((payload) => 'mock-token'),
     verifyAsync: jest.fn((token) => Promise.resolve({ iat: 1000, exp: 2000, sub: 'admin', username: 'admin' })),
   };
 
   beforeEach(async () => {
+    const mockConfigService = {
+      get: jest.fn((key: string) => {
+        if (key === 'ADMIN_USERNAME') return 'admin';
+        if (key === 'ADMIN_PASSWORD') return 'password123';
+        return null;
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthenticationService,

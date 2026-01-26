@@ -13,6 +13,20 @@
       "env": {
         "NODE_ENV": "development"
       }
+    },
+    {
+      "name": "Debug Jest Tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test", "--"],
+      "args": ["--runInBand", "--watch=false"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "TS_NODE_TRANSPILE_ONLY": "true"
+      }
     }
   ]
 }
