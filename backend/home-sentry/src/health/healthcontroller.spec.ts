@@ -4,6 +4,7 @@ import { HealthService } from './health.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
+  let service: HealthService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -12,11 +13,28 @@ describe('HealthController', () => {
     }).compile();
 
     controller = app.get<HealthController>(HealthController);
+    service = app.get<HealthService>(HealthService);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(controller.getStatus()).toBe({ status: 'ok', time: expect.any(String) });
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getStatus', () => {
+    it('should return health status', () => {
+      const result = controller.getStatus();
+      
+      expect(result).toBeDefined();
+      expect(result.status).toBe('healthy');
+      expect(result.time).toBeDefined();
+      expect(typeof result.time).toBe('string');
+    });
+
+    it('should return the status from service', () => {
+      const result = controller.getStatus();
+      const serviceResult = service.getStatus();
+
+      expect(result).toEqual(serviceResult);
     });
   });
 });
