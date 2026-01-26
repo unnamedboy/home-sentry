@@ -10,3 +10,4 @@
 
 !.gitignore
 !*.md
+!.github/
