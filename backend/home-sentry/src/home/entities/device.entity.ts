@@ -16,15 +16,15 @@ export class DeviceEntity {
   name: string;          // "Living Thermostat 1"
 
   @Column()
-  kind: string;          // "thermostat" / "sensor" / "valve" / "media_player" 等
+  kind: string;          // "thermostat" / "sensor" / "valve" / "media_player" etc.
 
-  // 来源系统，例如 "home_assistant" / "custom" / "zigbee2mqtt"
+  // source system, e.g. "home_assistant" / "custom" / "zigbee2mqtt"
   @Column({ default: 'home_assistant' })
   source: string;
 
-  // 和源系统的 id 关联，比如 HA 的 entity_id 或 device_id
+  // reference to source system id, e.g. HA entity_id or device_id
   @Column({ type: 'text', nullable: true })
-  sourceRef: string | null;     // 如 "climate.living_room"
+  sourceRef: string | null;     // e.g. "climate.living_room"
 
   @OneToMany(() => SignalEntity, (s) => s.device)
   signals: SignalEntity[];
