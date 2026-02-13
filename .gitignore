@@ -1,13 +1,66 @@
-*
-!*/
+# ============================================
+# Home Sentry - Blacklist .gitignore
+# 排除部署后生成的非代码文件 (基于 local-files.txt 分析)
+# ============================================
 
+# --- Git ---
+.git/
 
-!*.yaml
-!*.yml
-!*.conf
-!mqtt_pipe.py
-!Dockerfile
+# --- Grafana: 插件、数据库、运行时 ---
+grafana/volumes/
+grafana/*.db
 
-!.gitignore
-!*.md
-!.github/
+# --- Home Assistant: 存储、备份、数据库、日志、密钥 ---
+home-assistant/.storage/
+home-assistant/.aarlo/
+home-assistant/.ha_run.lock
+home-assistant/.HA_VERSION
+home-assistant/backups/
+home-assistant/home-assistant_v2.db*
+home-assistant/home-assistant.log*
+home-assistant/secrets.yaml
+home-assistant/tts/
+home-assistant/bosch_shc/
+
+# --- Homebridge: 依赖、持久化、备份、日志、密钥 ---
+homebridge/node_modules/
+homebridge/persist/
+homebridge/backups/
+homebridge/config.json
+homebridge/.uix-secrets
+homebridge/homebridge.log
+
+# --- Python Matter Server: 运行时数据、凭证 ---
+python-matter-server/matter-data/
+
+# --- Cloudflare Tunnel: 可能含密钥 ---
+cloudflare-tunnel/config.yml
+
+# --- 部署生成的列表文件 ---
+files.txt
+local-files.txt
+
+# --- 通用: Node/Python 构建产物、缓存、环境变量 ---
+node_modules/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+*.egg
+.env
+.env.*
+!.env.example
+
+# --- 数据库文件 ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- 日志与锁文件 ---
+*.log
+*.lock
