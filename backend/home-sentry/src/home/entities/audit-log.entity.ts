@@ -7,23 +7,23 @@ export class AuditLogEntity {
   id: number;
 
   @Column()
-  tableName: string;          // 比如 'homes', 'rooms', 'devices', 'signals'
+  tableName: string;          // e.g. 'homes', 'rooms', 'devices', 'signals'
 
   @Column()
   action: string;             // 'INSERT' | 'UPDATE' | 'DELETE'
 
   @Column()
-  recordId: string;           // 目标记录的主键，统一用 string 存
+  recordId: string;           // target record primary key, stored as string
 
   @Column({ type: 'datetime' })
-  timestamp: Date;            // 操作时间（UTC）
+  timestamp: Date;            // operation time (UTC)
 
   @Column({ type: 'text', nullable: true })
-  userId: string | null;      // 谁改的（可以先留 null，将来接 auth）
+  userId: string | null;      // who modified (null for now, will add auth later)
 
   @Column({ type: 'text', nullable: true })
-  oldValue: string | null;    // 修改前的 JSON（可选）
+  oldValue: string | null;    // JSON before change (optional)
 
   @Column({ type: 'text', nullable: true })
-  newValue: string | null;    // 修改后的 JSON（可选）
+  newValue: string | null;    // JSON after change (optional)
 }

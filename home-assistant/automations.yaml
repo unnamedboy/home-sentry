@@ -9,15 +9,15 @@
   actions:
     - action: notify.notify
       data:
-        title: "📊 Grafana 监控"
+        title: "📊 Grafana Monitor"
         message: |
-          更新时间: {{ now().strftime('%H:%M:%S') }}
+          Updated: {{ now().strftime('%H:%M:%S') }}
           {% if trigger.json.alerts is defined %}
           {% for alert in trigger.json.alerts %}
-          🪟 {{ alert.labels.friendly_name | default('未知设备') }}: {{ '🔴未关' if alert.status == 'firing' else '🟢已关' }}
+          🪟 {{ alert.labels.friendly_name | default('Unknown device') }}: {{ '🔴 Open' if alert.status == 'firing' else '🟢 Closed' }}
           {% endfor %}
           {% else %}
-          ⚠️ 收到测试信号 (无设备数据)
+          ⚠️ Test signal received (no device data)
           {% endif %}
         data:
           tag: "grafana_alert"

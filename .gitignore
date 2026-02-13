@@ -1,16 +1,16 @@
 # ============================================
 # Home Sentry - Blacklist .gitignore
-# 排除部署后生成的非代码文件 (基于 local-files.txt 分析)
+# Exclude non-code files generated after deployment (based on local-files.txt)
 # ============================================
 
 # --- Git ---
 .git/
 
-# --- Grafana: 插件、数据库、运行时 ---
+# --- Grafana: plugins, database, runtime ---
 grafana/volumes/
 grafana/*.db
 
-# --- Home Assistant: 存储、备份、数据库、日志、密钥 ---
+# --- Home Assistant: storage, backups, database, logs, secrets ---
 home-assistant/.storage/
 home-assistant/.aarlo/
 home-assistant/.ha_run.lock
@@ -22,7 +22,7 @@ home-assistant/secrets.yaml
 home-assistant/tts/
 home-assistant/bosch_shc/
 
-# --- Homebridge: 依赖、持久化、备份、日志、密钥 ---
+# --- Homebridge: deps, persist, backups, logs, secrets ---
 homebridge/node_modules/
 homebridge/persist/
 homebridge/backups/
@@ -30,17 +30,17 @@ homebridge/config.json
 homebridge/.uix-secrets
 homebridge/homebridge.log
 
-# --- Python Matter Server: 运行时数据、凭证 ---
+# --- Python Matter Server: runtime data, credentials ---
 python-matter-server/matter-data/
 
-# --- Cloudflare Tunnel: 可能含密钥 ---
+# --- Cloudflare Tunnel: may contain secrets ---
 cloudflare-tunnel/config.yml
 
-# --- 部署生成的列表文件 ---
+# --- Deployment-generated list files ---
 files.txt
 local-files.txt
 
-# --- 通用: Node/Python 构建产物、缓存、环境变量 ---
+# --- Common: Node/Python build artifacts, cache, env ---
 node_modules/
 __pycache__/
 *.py[cod]
@@ -56,11 +56,11 @@ build/
 .env.*
 !.env.example
 
-# --- 数据库文件 ---
+# --- Database files ---
 *.db
 *.sqlite
 *.sqlite3
 
-# --- 日志与锁文件 ---
+# --- Logs and lock files ---
 *.log
 *.lock
