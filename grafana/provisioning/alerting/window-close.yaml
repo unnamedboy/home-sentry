@@ -1,0 +1,150 @@
+# Grafana 告警规则 - 窗户关闭检测
+# 当窗户（binary_sensor，friendly_name 含「窗」）在过去 1h 有 on 且最近 10min 无 off 时触发
+# 触发后通过 contact point 推送到 Home Assistant Webhook
+#
+# 注意：datasourceUid (afa4rcosvgc1sb) 需与 provisioning/datasources 中 Loki 的 uid 一致
+# 若重新部署，需在 Grafana 中查看 Loki 数据源 uid 并替换
+#
+# TODO 泛化：当前 friendly_name=~".*窗.*" 仅匹配中文。后续可改为 device_class=window
+# 或多语言正则如 .*窗.*|.*window.*|.*fenster.*
+
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: 窗户关闭
+      folder: 窗户关闭检测
+      interval: 1m
+      rules:
+        - uid: ffah6hvjcnklca
+          title: 窗未关好
+          condition: E
+          data:
+            # A: 过去 1h 内 state=on 的条数（按 friendly_name 聚合）
+            - refId: A
+              queryType: range
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: afa4rcosvgc1sb
+              model:
+                editorMode: code
+                expr: sum by (friendly_name) (count_over_time({job="ha_mqtt"} | json | friendly_name=~".*窗.*" | state="on" [1h]))
+                instant: true
+                intervalMs: 1000
+                legendFormat: '{{friendly_name}}'
+                maxDataPoints: 43200
+                queryType: range
+                refId: A
+                step: 1m
+            # B: 过去 10min 内 state=off 的条数（或 0，用于对比）
+            - refId: B
+              queryType: range
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: afa4rcosvgc1sb
+              model:
+                datasource:
+                    type: loki
+                    uid: afa4rcosvgc1sb
+                editorMode: code
+                expr: "(sum by (friendly_name) (count_over_time({job=\"ha_mqtt\"} | json | friendly_name=~\".*窗.*\" | state=\"off\" [1h]))) \r\nor \r\n(sum by (friendly_name) (count_over_time({job=\"ha_mqtt\"} | json | friendly_name=~\".*窗.*\" [1h]) * 0))"
+                intervalMs: 1000
+                legendFormat: '{{friendly_name}}'
+                maxDataPoints: 43200
+                queryType: range
+                refId: B
+            # C: 对 A 做 reduce，取 last 值
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: C
+                type: reduce
+            # D: 对 B 做 reduce，取 last 值
+            - refId: D
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: B
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: D
+                type: reduce
+            # E: 条件 C - D > 0，即「有 on 但无 off」= 窗未关
+            - refId: E
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: $C - $D > 0
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: E
+                type: math
+          noDataState: KeepLast
+          execErrState: KeepLast
+          for: 15m
+          keepFiringFor: 10s
+          annotations:
+            summary: 没关窗的提醒
+          labels:
+            friendly_name: '{{$$labels.friendly_name}}'
+          isPaused: false
+          notification_settings:
+            receiver: HomeAssistant

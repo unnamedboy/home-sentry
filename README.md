@@ -4,72 +4,70 @@ A self-hosted smart home monitoring and management platform combining Home Assis
 
 ## Overview
 
-Home Sentry provides a fully self-hosted, privacy-focused smart home infrastructure. Core capabilities:
+Home Sentry provides a privacy-focused smart home infrastructure with a **local + cloud** split:
 
-- **Device State Collection** – Home Assistant device states streamed to Loki via MQTT Statestream
-- **Logging & Visualization** – Loki storage and Grafana dashboards for device history
-- **Alerts & Push Notifications** – Grafana alerts trigger Home Assistant via Webhook for iOS and other push targets
-- **REST API** – NestJS backend for homes, rooms, devices, and audit logs
+- **Local (RPi):** Device state collection, Loki logs, Grafana dashboards, alerts, NestJS API — data stays on-prem
+- **Cloud:** Vector DB + AI pipeline (M2–M3) — runs where GPU/LLM is available; pulls logs from Loki via tunnel
+- **Access:** Tunnel (e.g. Cloudflare Tunnel, Tailscale) from RPi to expose local services for remote access
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Home Sentry Platform                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  ┌──────────────────┐           ┌──────────────────┐                 │
-│  │  Home Assistant  │◄─────────►│   MQTT Broker    │                 │
-│  │  (Automation)    │           │   (Mosquitto)    │                 │
-│  └────────┬─────────┘           └────────┬─────────┘                 │
-│           │ MQTT Statestream             │                           │
-│           └──────────────┬───────────────┘                           │
-│                          ▼                                            │
-│           ┌──────────────────────────────┐                           │
-│           │      mqtt-logger (Python)    │                           │
-│           │  Subscribe homeassistant/#    │                           │
-│           │  → Push to Loki              │                           │
-│           └──────────────────────────────┘                           │
-│                          │                                            │
-│           ┌──────────────┼──────────────┬────────────────────┐       │
-│           ▼              ▼              ▼                    ▼        │
-│      ┌─────────┐   ┌───────────┐   ┌──────────────┐   ┌──────────┐  │
-│      │ Grafana │   │  NestJS   │   │ query-ha.ps1 │   │ Vector   │  │
-│      │ Dash/   │   │  Backend  │   │ Log Query    │   │ DB + AI  │  │
-│      │ Alerts  │   │           │   │              │   │ (M2-M3)   │  │
-│      └────┬────┘   └─────┬─────┘   └──────────────┘   └────▲─────┘  │
-│           │ Webhook      │ SQLite                         │         │
-│           ▼              ▼                    Loki ─────────┘         │
-│      ┌─────────┐   ┌──────────┐                                       │
-│      │   HA    │   │ Database │                                       │
-│      │ iOS Push│   │          │                                       │
-│      └─────────┘   └──────────┘                                       │
-│                                                                       │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Local["Local (RPi / NAS)"]
+        HA[Home Assistant]
+        MQTT[MQTT Broker]
+        Loki[Loki]
+        Grafana[Grafana]
+        Logger[mqtt-logger]
+        Nest[NestJS API]
+        HA <-->|MQTT Statestream| MQTT
+        Logger -->|subscribe| MQTT
+        Logger -->|push| Loki
+        Grafana -->|query| Loki
+        Grafana -->|Webhook| HA
+        Nest -->|SQLite| DB[(Database)]
+    end
+
+    subgraph Cloud["Cloud (M2–M3)"]
+        Vector[Vector DB]
+        AI[LLM / AI]
+        Vector --> AI
+    end
+
+    subgraph User["User"]
+        Client[Browser / App]
+    end
+
+    Loki -.->|Loki API / tunnel| Vector
+    Cloud -.->|tunnel back| Local
+    Client -->|tunnel| Grafana
+    Client -->|tunnel| HA
 ```
 
 ## Data Flow
 
-1. **Home Assistant** publishes state changes to MQTT via `mqtt.yaml` for: `light`, `switch`, `sensor`, `binary_sensor`, `media_player`, `climate`, `fan`, `cover`
-2. **mqtt-logger** subscribes to `homeassistant/#`, debounces, and pushes to **Loki**
-3. **Grafana** connects to Loki for dashboards and alerting
-4. **Grafana alerts** call the Home Assistant Webhook on trigger; HA sends notifications (e.g. iOS push)
-5. **(M2–M3)** Loki logs → **vector DB** (embedded) → **AI** queries for semantic analysis and energy-saving recommendations
+1. **Local:** Home Assistant → MQTT → mqtt-logger → Loki; Grafana queries Loki for dashboards and alerts
+2. **Alerts:** Grafana → Webhook → Home Assistant → iOS push
+3. **Cloud (M2–M3):** AI pipeline pulls logs from Loki (via tunnel) → Vector DB → LLM for semantic analysis and recommendations
+4. **Access:** User tunnels back to RPi to access Grafana, HA, etc.
+
+> Architecture diagram uses [Mermaid](https://mermaid.js.org/) (renders in GitHub/GitLab). Local vs Cloud split keeps sensitive device data on-prem while offloading AI compute.
 
 ## Project Structure
 
 ```
 home-sentry/
-├── backend/home-sentry/     # NestJS REST API
-├── home-assistant/           # HA config (automations, mqtt, blueprints)
-├── mosquitto/                # MQTT message broker
-├── loki/                     # Log aggregation
-├── grafana/                  # Monitoring & visualization
-├── mqtt-logger/              # MQTT → Loki bridge (Python)
-├── nginx/                    # Reverse proxy
-├── python-matter-server/     # Matter protocol support
-├── query-ha.ps1              # PowerShell log query utility
-├── ai-analysis/              # (M2–M3) Log ingestion, vector DB, AI insights
+├── backend/home-sentry/     # NestJS REST API (local)
+├── home-assistant/          # HA config (automations, mqtt, blueprints)
+├── mosquitto/               # MQTT message broker (local)
+├── loki/                    # Log aggregation (local)
+├── grafana/                 # Monitoring & visualization (local)
+├── mqtt-logger/             # MQTT → Loki bridge (local)
+├── nginx/                   # Reverse proxy
+├── python-matter-server/    # Matter protocol support
+├── query-ha.ps1             # PowerShell log query utility
+├── ai-analysis/             # (M2–M3) Cloud: vector DB, AI pipeline
 └── README.md
 ```
 
@@ -91,7 +89,7 @@ home-sentry/
 | Milestone | Status | Description |
 |-----------|--------|--------------|
 | [M1](#milestone-1-foundation) | ✅ Done | Infrastructure, data pipeline, window alert |
-| [M2](#milestone-2-log-ingestion--vector-database) | 🔲 Todo | Ingest Loki logs into vector DB for semantic search |
+| [M2](#milestone-2-log-ingestion--vector-database) | 🔲 Next | Ingest Loki logs into vector DB for semantic search |
 | [M3](#milestone-3-ai-analysis--insights) | 🔲 Todo | AI analyzes logs, generates energy-saving recommendations |
 | [M4](#milestone-4-custom-events--alerts) | 🔲 Todo | Expand Grafana alerts (climate, lights, energy, etc.) |
 | [M5](#milestone-5-ai-driven-automation) | 🔲 Todo | Optional: surface AI insights to HA / automation |
@@ -108,18 +106,18 @@ home-sentry/
 - NestJS backend (homes, rooms, devices, audit)
 - `query-ha.ps1` for Loki log queries
 
-**Remaining (optional):** Root docker-compose, Grafana provisioning as code, `.env.example`
+**Remaining (optional):** Root docker-compose ✅, Grafana provisioning as code, `.env.example` ✅
 
 ---
 
 #### Milestone 2: Log Ingestion & Vector Database
 
-**Status: 🔲 Todo**
+**Status: 🔲 Next** (runs on **cloud**)
 
 - **Goal:** Ingest Loki logs into a vector database for semantic search and AI analysis
 - **Tasks:**
   - Add vector DB (e.g. Qdrant, Chroma, pgvector, or Milvus)
-  - Build ingestion pipeline: Loki API → parse logs → embed (e.g. sentence-transformers) → store in vector DB
+  - Build ingestion pipeline: Loki API (via tunnel) → parse logs → embed → store in vector DB
   - Support incremental sync (periodic or event-driven)
 - **Output:** Logs queryable by meaning, not just keyword/LogQL
 
@@ -127,11 +125,11 @@ home-sentry/
 
 #### Milestone 3: AI Analysis & Insights
 
-**Status: 🔲 Todo**
+**Status: 🔲 Todo** (runs on **cloud**)
 
 - **Goal:** Use AI to analyze device logs and generate energy-saving recommendations
 - **Tasks:**
-  - LLM integration (local e.g. Ollama, or cloud API)
+  - LLM integration (cloud API or self-hosted GPU)
   - Query vector DB for relevant log context (usage patterns, anomalies)
   - Prompt design: summarize patterns, identify waste, suggest optimizations
   - Outputs: peak usage, idle devices, temperature setpoints, lighting habits, etc.
@@ -253,6 +251,10 @@ LOKI_HOST=192.168.1.100  # Loki host for query-ha.ps1
 - **MQTT connection fails**: Ensure Mosquitto container is running and network is reachable
 - **No Loki data**: Verify mqtt-logger is running and HA is publishing MQTT states
 - **Grafana alerts not pushing**: Check Webhook URL and that HA automations are enabled
+
+## Backlog / Later Improvements
+
+- **Grafana provisioning as code:** Mount `grafana/provisioning/` to `/etc/grafana/provisioning`; provision Loki datasource, window-close alert rule, HA Webhook contact point; document NAS volume path (e.g. `GRAFANA_DATA_PATH=/mnt/nas/grafana`)
 
 ## Contributing
 
