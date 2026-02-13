@@ -6,6 +6,8 @@ import time
 import json
 import threading
 from collections import defaultdict
+from queue import Queue, Full, Empty
+from typing import List, Tuple
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -30,6 +32,12 @@ HTTP_TIMEOUT_SEC = float(os.getenv("HTTP_TIMEOUT_SEC", "3"))
 HTTP_POOL_CONNECTIONS = int(os.getenv("HTTP_POOL_CONNECTIONS", "20"))
 HTTP_POOL_MAXSIZE = int(os.getenv("HTTP_POOL_MAXSIZE", "50"))
 
+# Retry / backpressure
+RETRY_QUEUE_MAX = int(os.getenv("RETRY_QUEUE_MAX", "1000"))
+RETRY_MAX_ATTEMPTS = int(os.getenv("RETRY_MAX_ATTEMPTS", "5"))
+RETRY_BASE_DELAY_SEC = float(os.getenv("RETRY_BASE_DELAY_SEC", "1"))
+RETRY_MAX_DELAY_SEC = float(os.getenv("RETRY_MAX_DELAY_SEC", "60"))
+
 # -----------------------------
 # State
 # -----------------------------
@@ -44,6 +52,11 @@ last_event_ts_ns = {}
 
 lock = threading.RLock()
 stop_event = threading.Event()
+
+# Retry queue: (payload, kind, attempt, next_retry_at)
+retry_queue: Queue = Queue(maxsize=RETRY_QUEUE_MAX)
+retry_drop_count = 0
+retry_drop_lock = threading.Lock()
 
 
 # -----------------------------
@@ -129,35 +142,67 @@ def build_line(entity_path: str, attrs: dict) -> str:
     return json.dumps(line_obj, ensure_ascii=False, separators=(",", ":"))
 
 
-def push_loki(payload: dict, kind: str):
+def push_loki(payload: dict, kind: str, attempt: int = 0) -> bool:
+    """Push to Loki. On failure, enqueue for retry. Returns True if sent, False if queued/dropped."""
     try:
         r = SESSION.post(LOKI_URL, json=payload, timeout=HTTP_TIMEOUT_SEC)
         if r.status_code >= 300:
             if PRINT_LOKI_ERRORS:
                 print(f"[LOKI] {kind} push failed {r.status_code}: {r.text[:300]}")
-        else:
-            if PRINT_LOKI_SUCCESS:
-                print(f"[LOKI] {kind} ok")
+            _enqueue_retry(payload, kind, attempt)
+            return False
+        if PRINT_LOKI_SUCCESS:
+            print(f"[LOKI] {kind} ok")
+        return True
     except Exception as e:
         if PRINT_LOKI_ERRORS:
             print(f"[LOKI] {kind} error: {e}")
+        _enqueue_retry(payload, kind, attempt)
+        return False
 
 
-def send_entity_to_loki(entity_path: str, attrs: dict, timestamp_ns: int):
-    # if no 'state', this message can be discarded, as the log analysis is based on this field
-    if "state" not in attrs:
+def _enqueue_retry(payload: dict, kind: str, attempt: int):
+    global retry_drop_count
+    if attempt >= RETRY_MAX_ATTEMPTS:
+        if PRINT_LOKI_ERRORS:
+            print(f"[LOKI] {kind} dropped after {RETRY_MAX_ATTEMPTS} retries")
+        with retry_drop_lock:
+            retry_drop_count += 1
         return
+    next_at = time.monotonic() + min(
+        RETRY_BASE_DELAY_SEC * (2**attempt),
+        RETRY_MAX_DELAY_SEC,
+    )
+    item = (payload, kind, attempt + 1, next_at)
+    try:
+        retry_queue.put_nowait(item)
+    except Full:
+        with retry_drop_lock:
+            retry_drop_count += 1
+        if PRINT_LOKI_ERRORS:
+            print(f"[LOKI] retry queue full, dropping {kind} (backpressure)")
 
-    labels = build_labels(entity_path, attrs)
-    line = build_line(entity_path, attrs)
 
-    payload = {
-        "streams": [{
-            "stream": labels,
-            "values": [[str(timestamp_ns), line]]
-        }]
-    }
-    push_loki(payload, kind="entity")
+# -----------------------------
+# Retry worker (backpressure: failed Loki pushes)
+# -----------------------------
+def retry_worker():
+    pending: List[Tuple] = []
+    interval = max(0.1, FLUSH_INTERVAL_MS / 1000.0)
+    while not stop_event.is_set():
+        # Drain queue into pending
+        try:
+            while True:
+                item = retry_queue.get_nowait()
+                pending.append(item)
+        except Empty:
+            pass
+        now = time.monotonic()
+        ready = [p for p in pending if p[3] <= now]
+        pending[:] = [p for p in pending if p[3] > now]
+        for payload, kind, attempt, _ in ready:
+            push_loki(payload, kind, attempt)
+        time.sleep(interval)
 
 
 # -----------------------------
@@ -176,12 +221,20 @@ def flush_worker():
             for entity_path in due:
                 next_flush_at.pop(entity_path, None)
 
-        # flush outside lock
+        # flush outside lock (batch push to reduce HTTP overhead)
+        streams = []
         for entity_path in due:
             with lock:
                 attrs = dict(entity_cache.get(entity_path, {}))
                 ts_ns = last_event_ts_ns.get(entity_path, time.time_ns())
-            send_entity_to_loki(entity_path, attrs, ts_ns)
+            if "state" not in attrs:
+                continue
+            labels = build_labels(entity_path, attrs)
+            line = build_line(entity_path, attrs)
+            streams.append({"stream": labels, "values": [[str(ts_ns), line]]})
+        if streams:
+            batch_payload = {"streams": streams}
+            push_loki(batch_payload, kind="entity")
 
         time.sleep(interval)
 
@@ -196,8 +249,16 @@ def schedule_flush(entity_path: str):
 # MQTT callbacks
 # -----------------------------
 def on_connect(client, userdata, flags, rc):
-    print(f"[MQTT] connected rc={rc}, subscribing: {MQTT_TOPIC}")
-    client.subscribe(MQTT_TOPIC)
+    if rc == 0:
+        print(f"[MQTT] connected, subscribing: {MQTT_TOPIC}")
+        client.subscribe(MQTT_TOPIC)
+    else:
+        print(f"[MQTT] connect failed rc={rc}, will retry")
+
+
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print(f"[MQTT] disconnected rc={rc}, reconnecting...")
 
 
 def on_message(client, userdata, msg):
@@ -236,11 +297,14 @@ def on_message(client, userdata, msg):
 # Main
 # -----------------------------
 def main():
-    t = threading.Thread(target=flush_worker, daemon=True)
-    t.start()
+    t_flush = threading.Thread(target=flush_worker, daemon=True)
+    t_flush.start()
+    t_retry = threading.Thread(target=retry_worker, daemon=True)
+    t_retry.start()
 
     client = mqtt.Client(protocol=mqtt.MQTTv311)
     client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
     client.on_message = on_message
 
     client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
