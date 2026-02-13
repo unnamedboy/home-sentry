@@ -24,7 +24,7 @@ import { DeviceService } from './device.service';
       SignalState,
     ]),
   ],
-  providers: [AuditService, HomeService],
+  providers: [AuditService, HomeService, RoomService, DeviceService],
   controllers: [DeviceController, HomeController, RoomController],
   exports: [HomeService, RoomService, DeviceService, TypeOrmModule], // typeorm for future mqtt ingest modules
 })
