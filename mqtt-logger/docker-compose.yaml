@@ -3,7 +3,7 @@ services:
   mqtt-to-loki:
     build: .
     container_name: mqtt-to-loki
-    restart: unless-stopped
+    restart: always
     networks:
       - home-sentry
     environment:
