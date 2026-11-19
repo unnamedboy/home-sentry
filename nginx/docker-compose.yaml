@@ -4,7 +4,8 @@ services:
     container_name: nginx
     ports:
       - "22:22"
-      - "80:80"
+      # HTTP only for the local cloudflared tunnel; the outside world gets 22 and 443
+      - "127.0.0.1:80:80"
       - "443:443"
     volumes:
       - /opt/nginx/nginx.conf:/etc/nginx/nginx.conf
