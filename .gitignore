@@ -64,3 +64,14 @@ build/
 # --- Logs and lock files ---
 *.log
 *.lock
+
+# --- Raspberry Pi checkout (added 2026-11-19) ---
+# Hand-made backups of compose files
+*.bak-*
+# Third-party integrations installed through HACS; HA backups cover them
+home-assistant/custom_components/
+# Homebridge is not deployed (no container or service); leftover runtime files
+homebridge/
+# Docker runtime and certbot webroot
+containerd/
+certbot/
