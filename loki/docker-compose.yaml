@@ -7,6 +7,7 @@ services:
       - "3100:3100"
     volumes:
       - /mnt/rpi-share/loki:/loki
+      - /mnt/rpi-share/loki/local-config.yaml:/etc/loki/local-config.yaml
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - home-sentry

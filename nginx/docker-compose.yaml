@@ -3,8 +3,12 @@ services:
     image: nginx:latest
     container_name: nginx
     ports:
+      - "22:22"
       - "80:80"
+      - "443:443"
     volumes:
       - /opt/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /opt/certbot/webroot:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: always
 
