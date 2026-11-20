@@ -21,6 +21,9 @@ home-assistant/home-assistant.log*
 home-assistant/secrets.yaml
 home-assistant/tts/
 home-assistant/bosch_shc/
+# Automations and packages are kept in a separate private repo (they describe household routines)
+home-assistant/automations.yaml
+home-assistant/packages/
 
 # --- Homebridge: deps, persist, backups, logs, secrets ---
 homebridge/node_modules/

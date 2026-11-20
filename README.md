@@ -59,7 +59,7 @@ flowchart TB
 ```
 home-sentry/
 ├── backend/home-sentry/     # NestJS REST API (local)
-├── home-assistant/          # HA config (automations, mqtt, blueprints)
+├── home-assistant/          # HA config (mqtt, blueprints); automations are private
 ├── mosquitto/               # MQTT message broker (local)
 ├── loki/                    # Log aggregation (local)
 ├── grafana/                 # Monitoring & visualization (local)
@@ -219,9 +219,9 @@ Current "window close" alert flow:
 
 1. Grafana alert rule (e.g. `binary_sensor` with `state == "on"`)
 2. Alert triggers POST to HA Webhook
-3. HA automation `grafana_ios_push_window_state` receives and sends iOS notification
+3. An HA automation receives it and sends an iOS notification
 
-To add new alerts, reuse the same Webhook or add new ones, and extend `automations.yaml` with corresponding automations.
+Automations are not part of this repo: `home-assistant/automations.yaml` (UI-made) and `home-assistant/packages/` are git-ignored and managed privately. Webhook ids belong in `secrets.yaml` (`webhook_id: !secret ...`).
 
 ## Configuration
 
