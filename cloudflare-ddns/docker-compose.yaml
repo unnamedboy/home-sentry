@@ -1,0 +1,17 @@
+services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cf-ddns
+    restart: always
+    # CF_API_TOKEN lives in .env next to this file (mode 600, git-ignored)
+    environment:
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      # Full domain name
+      - DOMAINS=gitlab.codingcats.io
+      # Keep the cloud grey (DNS only) so SSH on port 22 works
+      - PROXIED=false
+      # Check for IP changes every 5 minutes
+      - CHECK_EVERY=300
+      # IPv4 only (no public IPv6)
+      - IP4_PROVIDER=cloudflare.trace
+      - IP6_PROVIDER=none

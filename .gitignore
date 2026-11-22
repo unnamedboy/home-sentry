@@ -21,6 +21,9 @@ home-assistant/home-assistant.log*
 home-assistant/secrets.yaml
 home-assistant/tts/
 home-assistant/bosch_shc/
+# Automations and packages are kept in a separate private repo (they describe household routines)
+home-assistant/automations.yaml
+home-assistant/packages/
 
 # --- Homebridge: deps, persist, backups, logs, secrets ---
 homebridge/node_modules/
@@ -64,3 +67,14 @@ build/
 # --- Logs and lock files ---
 *.log
 *.lock
+
+# --- Raspberry Pi checkout (added 2026-11-19) ---
+# Hand-made backups of compose files
+*.bak-*
+# Third-party integrations installed through HACS; HA backups cover them
+home-assistant/custom_components/
+# Homebridge is not deployed (no container or service); leftover runtime files
+homebridge/
+# Docker runtime and certbot webroot
+containerd/
+certbot/

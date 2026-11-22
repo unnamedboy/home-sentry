@@ -1,4 +1,8 @@
 
+# Private config (automations etc.) lives in packages/, which is not in this repo.
+homeassistant:
+  packages: !include_dir_named packages
+
 # Loads default set of integrations. Do not remove.
 default_config:
 
@@ -6,9 +10,23 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
+# automations.yaml is for automations made in the UI; it is not tracked (create it with `[]`).
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
 # mqtt publish
 mqtt_statestream: !include mqtt.yaml
+
+# nginx reverse proxy trust
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+
+# Keep raw history for a year (default is 10 days). ~1.2 GB/year at current rates.
+recorder:
+  purge_keep_days: 365
