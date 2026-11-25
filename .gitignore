@@ -25,13 +25,6 @@ home-assistant/bosch_shc/
 home-assistant/automations.yaml
 home-assistant/packages/
 
-# --- Homebridge: deps, persist, backups, logs, secrets ---
-homebridge/node_modules/
-homebridge/persist/
-homebridge/backups/
-homebridge/config.json
-homebridge/.uix-secrets
-homebridge/homebridge.log
 
 # --- Python Matter Server: runtime data, credentials ---
 python-matter-server/matter-data/
@@ -73,8 +66,6 @@ build/
 *.bak-*
 # Third-party integrations installed through HACS; HA backups cover them
 home-assistant/custom_components/
-# Homebridge is not deployed (no container or service); leftover runtime files
-homebridge/
 # Docker runtime and certbot webroot
 containerd/
 certbot/
